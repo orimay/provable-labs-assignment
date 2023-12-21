@@ -1,0 +1,26 @@
+{
+  "name": "provable-labs-assignment",
+  "description": "The Psychic Poker Player",
+  "version": "1.0.0",
+  "author": "Dmitrii Baranov <dmitrii.a.baranov@gmail.com>",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "serve": "node dist/index.js",
+    "dev": "vite-node src/index.ts",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@liuli-util/vite-plugin-node": "^0.7.0",
+    "@types/node": "^20.10.5",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.1.1",
+    "typescript": "^5.0.2",
+    "vite": "^4.5.1",
+    "vite-node": "^1.1.0",
+    "vitest": "^1.1.0"
+  }
+}
