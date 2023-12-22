@@ -162,14 +162,16 @@ export function getBestHand(hand: string[], deck: string[]) {
     const flushCards = getFlushCards(hand, cardsFromDeck);
     if (flushCards !== null) {
       if (isStraight(flushCards.hand, flushCards.deck)) {
-        bestHand = PokerHand.StraightFlush;
-        break; // The best possible hand found
+        // The best possible hand found
+        return PokerHand.StraightFlush;
       }
     }
 
+    // no need to count cards if we already found the best card count
+    if (reachedHand(bestHand, PokerHand.FourOfAKind)) continue;
+
     const countGroups = getCountGroups(hand, cardsFromDeck);
 
-    if (reachedHand(bestHand, PokerHand.FourOfAKind)) continue;
     if (countGroups.get(4)) {
       bestHand = PokerHand.FourOfAKind;
       continue;
