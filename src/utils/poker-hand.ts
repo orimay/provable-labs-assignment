@@ -1,13 +1,7 @@
 import { CARD_SUITS } from '../constants/card-suits';
 import { CARD_VALUES } from '../constants/card-values';
 import { PokerHand } from '../enums/poker-hand';
-import {
-  cardByOtherValue,
-  cardBySuit,
-  collect,
-  getSuit,
-  getValue,
-} from './card-feature';
+import { cardBySuit, collect, getSuit, getValue } from './card-feature';
 
 /**
  * A mapping of poker hands to their corresponding values.
@@ -31,41 +25,50 @@ export function reachedHand(handCurrent: PokerHand, handTarget: PokerHand) {
 }
 
 /**
- * Gets the cards needed to form a specified number of a kind from the hand and deck.
- * @param n - The number of cards needed to form the specified kind.
- * @param hand - The current hand.
- * @param deck - The deck of cards.
- * @param cardsTaken - The number of cards already taken from the hand.
- * @returns An object with 'handRest', 'deckRest', and 'cardsTaken' properties if successful, `null` otherwise.
+ * Get count groups for card values in the hand and deck.
+ * @param hand - Array of cards in the player's hand.
+ * @param deck - Array of cards on top of the deck.
+ * @returns A map where keys are counts of each card value, and values are the number of occurrences of those counts.
  * @example
- * const result = getNOfAKind(3, ['2H', '2C', '2D', '4S', '5H'], ['6C', '7D', '8S', '9H', '10C']);
- * console.log(result.handRest); // ['4S', '5H']
- * console.log(result.deckRest); // ['6C', '7D', '8S', '9H', '10C']
- * console.log(result.cardsTaken); // 3
+ * const hand = ['2H', '3D', '4S', '2C', '3H'];
+ * const deck = ['2S', '6D', '7H'];
+ * const countGroups = getCountGroups(hand, deck);
+ * // Output: Map { 2 => 3, 3 => 2 }
  */
-export function getNOfAKind(
-  n: number,
-  hand: string[],
-  deck: string[],
-  cardsTaken = 0,
-) {
+export function getCountGroups(hand: string[], deck: string[]) {
+  const valueGroups = new Map<string, number>();
   const handValues = collect(hand, getValue);
   const deckValues = collect(deck, getValue);
-  for (const value of CARD_VALUES) {
-    const countInDeck = deckValues.get(value) ?? 0;
-    const handCards = 5 - deckValues.size - cardsTaken;
-    const countInHand = Math.min(handCards, handValues.get(value) ?? 0);
-    if (countInDeck + countInHand === n) {
-      const handRest = hand.filter(cardByOtherValue(value));
-      const deckRest = deck.filter(cardByOtherValue(value));
-      return {
-        handRest,
-        deckRest,
-        cardsTaken: n,
-      };
-    }
+
+  for (const [value, count] of deckValues) {
+    valueGroups.set(value, count);
   }
-  return null;
+
+  let handCardsLeft = 5 - deck.length;
+  const handEntries = [...handValues.entries()].sort(
+    (a, b) =>
+      // prioritizing by the count of this value in deck,
+      (deckValues.get(b[0]) ?? 0) - (deckValues.get(a[0]) ?? 0) ||
+      // then (if the same count in deck) by the count of this value in hand
+      b[1] - a[1],
+  );
+
+  // We can only use 5 cards, so discard extra hand cards
+  for (const [value, count] of handEntries) {
+    const deckCount = valueGroups.get(value) ?? 0;
+    const handCount = Math.min(handCardsLeft, count);
+    valueGroups.set(value, deckCount + handCount);
+    handCardsLeft -= handCount;
+    if (!handCardsLeft) break;
+  }
+
+  const countGroups = new Map<number, number>();
+  for (const count of valueGroups.values()) {
+    if (count <= 1) continue;
+    countGroups.set(count, (countGroups.get(count) ?? 0) + 1);
+  }
+
+  return countGroups;
 }
 
 /**
@@ -111,24 +114,27 @@ export function isStraight(hand: string[], deck: string[]) {
   const handValues = collect(hand, getValue);
   const deckValues = collect(deck, getValue);
 
+  // Every deck card must only appear once in straight
+  if (deckValues.size !== deck.length) return false;
+
   let sequence = 0;
   let handCardsLeft = 5 - deckValues.size;
   for (const value of CARD_VALUES) {
     const countInDeck = deckValues.get(value) ?? 0;
 
-    // Every deck card must only appear once in straight
-    if (countInDeck > 1) return false;
-
     if (countInDeck === 1) {
       ++sequence;
     } else if (handCardsLeft && handValues.has(value)) {
+      // the sequence may start with hand cards
       --handCardsLeft;
       ++sequence;
     } else {
+      // the sequence is broken, reset
       sequence = 0;
       handCardsLeft = 5 - deckValues.size;
     }
 
+    // the sequence is found
     if (sequence === 5) return true;
   }
   return false;
@@ -161,26 +167,18 @@ export function getBestHand(hand: string[], deck: string[]) {
       }
     }
 
+    const countGroups = getCountGroups(hand, cardsFromDeck);
+
     if (reachedHand(bestHand, PokerHand.FourOfAKind)) continue;
-    const nOfAKindResult = getNOfAKind(4, hand, cardsFromDeck);
-    if (nOfAKindResult !== null) {
+    if (countGroups.get(4)) {
       bestHand = PokerHand.FourOfAKind;
       continue;
     }
 
     if (reachedHand(bestHand, PokerHand.FullHouse)) continue;
-    const threeOfAKindResult = getNOfAKind(3, hand, cardsFromDeck);
-    if (threeOfAKindResult !== null) {
-      const twoOfAKindResult = getNOfAKind(
-        2,
-        threeOfAKindResult.handRest,
-        threeOfAKindResult.deckRest,
-        threeOfAKindResult.cardsTaken,
-      );
-      if (twoOfAKindResult !== null) {
-        bestHand = PokerHand.FullHouse;
-        continue;
-      }
+    if (countGroups.get(3) && countGroups.get(2)) {
+      bestHand = PokerHand.FullHouse;
+      continue;
     }
 
     if (reachedHand(bestHand, PokerHand.Flush)) continue;
@@ -196,27 +194,20 @@ export function getBestHand(hand: string[], deck: string[]) {
     }
 
     if (reachedHand(bestHand, PokerHand.ThreeOfAKind)) continue;
-    if (threeOfAKindResult !== null) {
+    if (countGroups.get(3)) {
       bestHand = PokerHand.ThreeOfAKind;
       continue;
     }
 
     if (reachedHand(bestHand, PokerHand.TwoPairs)) continue;
-    const twoOfAKindResult = getNOfAKind(2, hand, cardsFromDeck);
-    if (twoOfAKindResult !== null) {
-      const secondTwoOfAKindResult = getNOfAKind(
-        2,
-        twoOfAKindResult.handRest,
-        twoOfAKindResult.deckRest,
-        twoOfAKindResult.cardsTaken,
-      );
-      if (secondTwoOfAKindResult !== null) {
-        bestHand = PokerHand.TwoPairs;
-        continue;
-      }
-
-      bestHand = PokerHand.OnePair;
+    if (countGroups.get(2) === 2) {
+      bestHand = PokerHand.TwoPairs;
       continue;
+    }
+
+    // The best option available at this point, no need to check for reached hand
+    if (countGroups.get(2) === 1) {
+      bestHand = PokerHand.OnePair;
     }
   }
 

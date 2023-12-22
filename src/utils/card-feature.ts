@@ -24,18 +24,6 @@ export function getSuit(card: string) {
 }
 
 /**
- * Creates a function that checks if a card has a different value than the specified one.
- * @param value - The value to compare against.
- * @returns A function that takes a card and returns `true` if the card has a different value, `false` otherwise.
- * @example
- * const hasDifferentValue = cardByOtherValue('3');
- * const result = hasDifferentValue('2H'); // returns true
- */
-export function cardByOtherValue(value: string) {
-  return (card: string) => getValue(card) !== value;
-}
-
-/**
  * Creates a function that checks if a card has a specific suit.
  * @param suit - The suit to compare against.
  * @returns A function that takes a card and returns `true` if the card has the specified suit, `false` otherwise.
