@@ -157,9 +157,9 @@ export function getBestHand(hand: string[], deck: string[]) {
     // then when we discard the maximum count of cards
     // so we discard 0, 5, 4, 3, 2, 1 cards until we find the perfect hand
     const cardsToDiscard = (6 - i) % 6;
-    const cardsFromDeck = deck.slice(0, cardsToDiscard);
+    const cardsPickedFromDeck = deck.slice(0, cardsToDiscard);
 
-    const flushCards = getFlushCards(hand, cardsFromDeck);
+    const flushCards = getFlushCards(hand, cardsPickedFromDeck);
     if (flushCards !== null) {
       if (isStraight(flushCards.hand, flushCards.deck)) {
         // The best possible hand found
@@ -170,7 +170,7 @@ export function getBestHand(hand: string[], deck: string[]) {
     // no need to count cards if we already found the best card count
     if (reachedHand(bestHand, PokerHand.FourOfAKind)) continue;
 
-    const countGroups = getCountGroups(hand, cardsFromDeck);
+    const countGroups = getCountGroups(hand, cardsPickedFromDeck);
 
     if (countGroups.get(4)) {
       bestHand = PokerHand.FourOfAKind;
@@ -190,7 +190,7 @@ export function getBestHand(hand: string[], deck: string[]) {
     }
 
     if (reachedHand(bestHand, PokerHand.Straight)) continue;
-    if (isStraight(hand, cardsFromDeck)) {
+    if (isStraight(hand, cardsPickedFromDeck)) {
       bestHand = PokerHand.Straight;
       continue;
     }
