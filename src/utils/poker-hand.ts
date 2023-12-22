@@ -1,5 +1,5 @@
-import { CARD_SUITS } from '../constants/card-suits';
 import { CARD_VALUES } from '../constants/card-values';
+import { CardSuit } from '../enums/card-suit';
 import { PokerHand } from '../enums/poker-hand';
 import { cardBySuit, collect, getSuit, getValue } from './card-feature';
 
@@ -82,14 +82,19 @@ export function getCountGroups(hand: string[], deck: string[]) {
  * console.log(result.deck); // ['TH']
  */
 export function getFlushCards(hand: string[], deck: string[]) {
-  const handSuits = collect(hand, getSuit);
   const deckSuits = collect(deck, getSuit);
-  for (const suit of CARD_SUITS) {
-    const countDeck = deckSuits.get(suit) ?? 0;
 
-    // all cards from deck are mandatory
-    if (countDeck < deck.length) continue;
+  // flush requires all card suits matching
+  if (deckSuits.size > 1) return null;
 
+  const handSuits = collect(hand, getSuit);
+
+  // if we have suit from deck, add cards of this suit from hand
+  if (deckSuits.size === 1) {
+    const [suit, countDeck] = deckSuits.entries().next().value as [
+      CardSuit,
+      number,
+    ];
     const countHand = handSuits.get(suit) ?? 0;
     if (countDeck + countHand >= 5) {
       return {
@@ -98,7 +103,14 @@ export function getFlushCards(hand: string[], deck: string[]) {
       };
     }
   }
-  return null;
+
+  // flush requires all card suits matching
+  if (handSuits.size > 1) return null;
+
+  return {
+    deck,
+    hand,
+  };
 }
 
 /**
