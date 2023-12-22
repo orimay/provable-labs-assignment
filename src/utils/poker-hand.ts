@@ -160,11 +160,9 @@ export function getBestHand(hand: string[], deck: string[]) {
     const cardsPickedFromDeck = deck.slice(0, cardsToDiscard);
 
     const flushCards = getFlushCards(hand, cardsPickedFromDeck);
-    if (flushCards !== null) {
-      if (isStraight(flushCards.hand, flushCards.deck)) {
-        // The best possible hand found
-        return PokerHand.StraightFlush;
-      }
+    if (flushCards && isStraight(flushCards.hand, flushCards.deck)) {
+      // The best possible hand found
+      return PokerHand.StraightFlush;
     }
 
     // no need to count cards if we already found the best card count
@@ -184,7 +182,7 @@ export function getBestHand(hand: string[], deck: string[]) {
     }
 
     if (reachedHand(bestHand, PokerHand.Flush)) continue;
-    if (flushCards !== null) {
+    if (flushCards) {
       bestHand = PokerHand.Flush;
       continue;
     }
@@ -208,7 +206,7 @@ export function getBestHand(hand: string[], deck: string[]) {
     }
 
     // The best option available at this point, no need to check for reached hand
-    if (countGroups.get(2) === 1) {
+    if (countGroups.get(2)) {
       bestHand = PokerHand.OnePair;
     }
   }
